@@ -4,9 +4,7 @@ var logger = require("morgan");
 var mongoose = require("mongoose");
 
 // Our scraping tools
-// Axios is a promised-based http library, similar to jQuery's Ajax method
-// It works on the client and on the server
-var axios = require("axios");
+var request = require("request");
 var cheerio = require("cheerio");
 
 // Require all models
@@ -27,29 +25,29 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 // Connect to the Mongo DB
-mongoose.connect("mongodb://localhost/week18Populater");
+mongoose.connect("mongodb://localhost/week18riot");
 
 // Routes
 
 // A GET route for scraping the echoJS website
 app.get("/scrape", function (req, res) {
     // First, we grab the body of the html with request
-    axios.get("http://www.echojs.com/").then(function (response) {
-        // Then, we load that into cheerio and save it to $ for a shorthand selector
-        var $ = cheerio.load(response.data);
+    request("https://riotfest.org/", function (error, response, html) {
 
-        // Now, we grab every h2 within an article tag, and do the following:
-        $("article h2").each(function (i, element) {
+        // Load the body of the HTML into cheerio
+        var $ = cheerio.load(html);
+
+        // Now, we grab every article tag, and do the following:
+        $("article.type-post").each(function (i, element) {
             // Save an empty result object
             var result = {};
 
-            // Add the text and href of every link, and save them as properties of the result object
-            result.title = $(this)
-                .children("a")
-                .text();
-            result.link = $(this)
-                .children("a")
-                .attr("href");
+            // Add the text, href, and summary of every link, and save them as properties of the result object
+            result.title = $(this).find(".entry-title").text();
+
+            result.link = $(this).find(".entry-title").children().attr("href");
+
+            result.summary = $(this).find(".entry-excerpt-container").text();
 
             // Create a new Article using the `result` object built from scraping
             db.Article.create(result)
@@ -82,9 +80,9 @@ app.get("/articles", function (req, res) {
 });
 
 // Route for getting all Articles from the db
-app.get("/notes", function (req, res) {
+app.get("/comments", function (req, res) {
     // TODO: Finish the route so it grabs all of the articles
-    db.Note.find({}, function (err, data) {
+    db.Comment.find({}, function (err, data) {
         if (err) {
             console.log(err);
         }
@@ -103,7 +101,7 @@ app.get("/articles/:id", function (req, res) {
     // then responds with the article with the note included
 
     db.Article.findOne({ _id: req.params.id })
-        .populate("note")
+        .populate("comment")
         .then(function (dbArticle) {
             res.json(dbArticle);
         })
@@ -120,8 +118,8 @@ app.post("/articles/:id", function (req, res) {
     // then find an article from the req.params.id
     // and update it's "note" property with the _id of the new note
     db.Note.create(req.body)
-        .then(function (dbNote) {
-            return db.Article.findOneAndUpdate({ _id: req.params.id }, { note: dbNote._id }, { new: true });
+        .then(function (dbComment) {
+            return db.Article.findOneAndUpdate({ _id: req.params.id }, { note: dbComment._id }, { new: true });
         })
         .then(function (dbArticle) {
             res.json(dbArticle);
