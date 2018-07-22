@@ -1,9 +1,9 @@
 var express = require("express");
 var bodyParser = require("body-parser");
-var logger = require("morgan");
 var mongoose = require("mongoose");
 
-// Our scraping tools
+
+// Scraping tools
 var request = require("request");
 var cheerio = require("cheerio");
 
@@ -14,18 +14,28 @@ var PORT = 3000;
 
 // Initialize Express
 var app = express();
+// Set Handlebars.
+var exphbs = require("express-handlebars");
 
-// Configure middleware
+app.engine("handlebars", exphbs({ defaultLayout: "main" }));
+app.set("view engine", "handlebars");
 
-// Use morgan logger for logging requests
-app.use(logger("dev"));
+
+// parse application/json
+app.use(bodyParser.json());
 // Use body-parser for handling form submissions
 app.use(bodyParser.urlencoded({ extended: true }));
 // Use express.static to serve the public folder as a static directory
 app.use(express.static("public"));
 
+// If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
+var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/mongoHeadlines";
+
+// Set mongoose to leverage built in JavaScript ES6 Promises
 // Connect to the Mongo DB
-mongoose.connect("mongodb://localhost/week18riot");
+mongoose.Promise = Promise;
+mongoose.connect(MONGODB_URI);
+
 
 // Routes
 
@@ -79,6 +89,11 @@ app.get("/articles", function (req, res) {
     });
 });
 
+// index route loads view.html
+app.get("/", function (req, res) {
+    res.sendFile(path.join(__dirname, "./views/index.handlebars"));
+});
+
 // Route for getting all Articles from the db
 app.get("/comments", function (req, res) {
     // TODO: Finish the route so it grabs all of the articles
@@ -117,7 +132,7 @@ app.post("/articles/:id", function (req, res) {
     // save the new note that gets posted to the Notes collection
     // then find an article from the req.params.id
     // and update it's "note" property with the _id of the new note
-    db.Note.create(req.body)
+    db.Comment.create(req.body)
         .then(function (dbComment) {
             return db.Article.findOneAndUpdate({ _id: req.params.id }, { note: dbComment._id }, { new: true });
         })

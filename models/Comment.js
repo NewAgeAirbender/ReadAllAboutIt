@@ -4,14 +4,13 @@ var mongoose = require("mongoose");
 var Schema = mongoose.Schema;
 
 // Create a new NoteSchema object
-var CardSchema = new Schema({
+var CommentSchema = new Schema({
   title: String,
-  body: String,
-  author: String
+  body: String
 });
 
 // Creates the model
-var Note = mongoose.model("Card", CardSchema);
+var Comment = mongoose.model("Comment", CommentSchema);
 
 // Exports
-module.exports = Note;
+module.exports = Comment;
