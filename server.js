@@ -89,11 +89,6 @@ app.get("/articles", function (req, res) {
     });
 });
 
-// index route loads view.html
-app.get("/", function (req, res) {
-    res.sendFile(path.join(__dirname, "./views/index.handlebars"));
-});
-
 // Route for getting all Articles from the db
 app.get("/comments", function (req, res) {
     // TODO: Finish the route so it grabs all of the articles
@@ -143,6 +138,11 @@ app.post("/articles/:id", function (req, res) {
             // If an error occurs, send it back to the client
             res.json(err);
         });
+});
+
+// index route loads view.html
+app.get("/", function (req, res) {
+    res.sendFile(path.join(__dirname, "./views/index.handlebars"));
 });
 
 // Start the server
